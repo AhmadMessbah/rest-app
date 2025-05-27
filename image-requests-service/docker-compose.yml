@@ -16,7 +16,7 @@ services:
       - app-network
 
   mongodb:
-    image: mongo:8.0
+    image: mongo:latest
     volumes:
       - mongo-data:/data/db
       - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js

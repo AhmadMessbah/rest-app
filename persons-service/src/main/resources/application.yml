@@ -16,17 +16,24 @@ spring:
     show-sql: true
     properties:
       hibernate:
+        format_sql: true
         cache:
           use_second_level_cache: true
           use_query_cache: true
           region.factory_class: org.hibernate.cache.redis.jedis.JedisRegionFactory
-        redis:
-          host: ${REDIS_HOST:localhost}
-          port: ${REDIS_PORT:6379}
   # Redis configuration
   redis:
     host: ${REDIS_HOST:localhost}
     port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+    timeout: 2000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
 
 # Actuator and Prometheus configuration
 management:
@@ -38,6 +45,11 @@ management:
     export:
       prometheus:
         enabled: true
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
 
 # OpenAPI (Swagger) configuration
 springdoc:
@@ -46,17 +58,33 @@ springdoc:
   swagger-ui:
     path: /swagger-ui
     operationsSorter: alpha
+    tagsSorter: alpha
+    doc-expansion: none
 
 # JWT configuration
 jwt:
   secret: ${JWT_SECRET:your-secure-jwt-secret-key}
+  expiration: 86400000 # 24 hours in milliseconds
 
 # Logging configuration
 logging:
   level:
-    com.example.persons: INFO
+    root: INFO
+    com.example.persons: DEBUG
     org.springframework: WARN
     org.hibernate: WARN
-
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/persons-service.log
+    max-size: 10MB
+    max-history: 7
 
 # DB_HOST=localhost;DB_USERNAME=postgres;DB_PASSWORD=password;REDIS_HOST=localhost;REDIS_PORT=6379;JWT_SECRET=your-secure-jwt-secret-key
+
+rate-limit:
+  enabled: true
+  max-requests: 100
+  window-size: 60 # seconds

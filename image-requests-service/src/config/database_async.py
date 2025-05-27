@@ -1,15 +1,14 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from src.config.settings import settings
+from beanie import init_beanie
+from src.models.image_request import ImageRequest
 
 async def init_db():
     client = AsyncIOMotorClient(settings.MONGODB_URI)
-    db = client.get_database()
-    return db
+    return client.get_database()
 
-db = None  # Initialize in startup_event
-collection = None
+async def init_beanie():
+    db = await init_db()
+    await init_beanie(database=db, document_models=[ImageRequest])
 
-async def get_collection():
-    if collection is None:
-        raise RuntimeError("Database not initialized")
-    return collection
+db = None  # Will be initialized in startup_event

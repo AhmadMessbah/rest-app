@@ -1,0 +1,50 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+  redis:
+    host: localhost
+    port: 6379
+    database: 1
+    timeout: 2000
+
+server:
+  port: 0  # Random port for testing
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+jwt:
+  secret: test-secret-key-that-is-long-enough-for-testing-purposes
+  expiration: 3600000  # 1 hour in milliseconds
+
+logging:
+  level:
+    root: INFO
+    com.example.persons: DEBUG
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+rate-limit:
+  enabled: true
+  max-requests: 100
+  window-size: 60  # seconds 

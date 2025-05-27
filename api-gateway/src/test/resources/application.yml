@@ -1,0 +1,62 @@
+server:
+  port: 0  # Random port for testing
+
+spring:
+  application:
+    name: api-gateway-test
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+  redis:
+    host: localhost
+    port: 6379
+    database: 1  # Use a different database for testing
+    timeout: 1000
+    lettuce:
+      pool:
+        max-active: 4
+        max-idle: 4
+        min-idle: 0
+        max-wait: -1ms
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway,metrics
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.security: INFO
+    com.example.gateway: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+jwt:
+  secret: test-secret-key-for-testing-purposes-only
+  expiration: 3600000  # 1 hour in milliseconds
+
+rate-limit:
+  enabled: true
+  default:
+    replenish-rate: 10
+    burst-capacity: 10
+  endpoints:
+    persons:
+      replenish-rate: 5
+      burst-capacity: 5
+    images:
+      replenish-rate: 3
+      burst-capacity: 3 

@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: persons-service-config
+data:
+  db-host: "postgres-service"
+  redis-host: "redis-service"
+  spring.jpa.properties.hibernate.dialect: "org.hibernate.dialect.PostgreSQLDialect"
+  spring.jpa.hibernate.ddl-auto: "validate"
+  spring.jpa.show-sql: "false"
+  spring.jpa.properties.hibernate.format_sql: "false"
+  spring.cache.type: "redis"
+  spring.redis.timeout: "2000"
+  spring.redis.lettuce.pool.max-active: "8"
+  spring.redis.lettuce.pool.max-idle: "8"
+  spring.redis.lettuce.pool.min-idle: "0"
+  spring.redis.lettuce.pool.max-wait: "-1ms"
+  management.endpoints.web.exposure.include: "health,info,metrics,prometheus"
+  management.endpoint.health.show-details: "always"
+  management.health.redis.enabled: "true"
+  management.health.db.enabled: "true"
+  logging.level.root: "INFO"
+  logging.level.com.example.persons: "INFO"
+  logging.pattern.console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  logging.file.name: "/app/logs/persons-service.log"
+  logging.logback.rollingpolicy.max-file-size: "10MB"
+  logging.logback.rollingpolicy.max-history: "7"
+  rate-limit.enabled: "true"
+  rate-limit.max-requests: "100"
+  rate-limit.window-size: "60"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: persons-service-secrets
+type: Opaque
+stringData:
+  db-username: "postgres"
+  db-password: "change-me-in-production"
+  jwt-secret: "change-me-in-production-to-a-very-long-and-secure-secret-key"
+  redis-password: "change-me-in-production"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgresql
+  selector:
+    app: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: redis
+  selector:
+    app: redis 

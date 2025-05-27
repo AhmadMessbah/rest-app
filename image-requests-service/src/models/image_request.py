@@ -6,7 +6,7 @@ from typing import Optional
 class ImageRequest(Document):
     image_data: bytes
     extracted_text: Indexed(str, index_type="text")  # Indexed for full-text search
-    created_at: datetime = datetime.utcnow()
+    created_at: datetime = datetime.now()
     user_id: Optional[str] = None
 
     class Settings:

@@ -18,3 +18,8 @@ async def test_create_image_request():
 async def test_get_image_request():
     response = client.get("/api/image-requests/123", headers={"Authorization": "Bearer valid-token"})
     assert response.status_code == 404  # Since no real data exists
+
+
+# curl -X POST "http://localhost:8000/auth/token" -d '{"user_id": "test_user"}'
+# curl -X POST "http://localhost:8000/" -H "Authorization: Bearer <your_token>" -F "file=@/path/to/image.jpg"
+# curl -X GET "http://localhost:8000/<image_request_id>" -H "Authorization: Bearer <your_token>"

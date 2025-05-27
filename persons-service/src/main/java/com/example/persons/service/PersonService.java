@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,14 +27,15 @@ public class PersonService {
     }
 
     /**
-     * Retrieves all persons from the database.
-     * @return List of all persons.
+     * Retrieves all persons from the database with pagination.
+     * @param pageable The pagination information.
+     * @return Page of persons.
      */
     @Cacheable("persons")
     @Transactional(readOnly = true)
-    public List<Person> findAll() {
-        logger.info("Fetching all persons");
-        return personRepository.findAll();
+    public Page<Person> findAll(Pageable pageable) {
+        logger.info("Fetching persons with pagination: {}", pageable);
+        return personRepository.findAll(pageable);
     }
 
     /**
@@ -48,11 +51,23 @@ public class PersonService {
     }
 
     /**
+     * Retrieves a person by their email.
+     * @param email The email of the person.
+     * @return Optional containing the person, or empty if not found.
+     */
+    @Cacheable(value = "personByEmail", key = "#email")
+    @Transactional(readOnly = true)
+    public Optional<Person> findByEmail(String email) {
+        logger.info("Fetching person with email: {}", email);
+        return personRepository.findByEmail(email);
+    }
+
+    /**
      * Saves a single person to the database.
      * @param person The person to save.
      * @return The saved person.
      */
-    @CacheEvict(value = "persons", allEntries = true)
+    @CacheEvict(value = {"persons", "person", "personByEmail"}, allEntries = true)
     @Transactional
     public Person save(Person person) {
         logger.info("Saving person: {}", person.getName());
@@ -64,7 +79,7 @@ public class PersonService {
      * @param persons The list of persons to save.
      * @return The saved persons.
      */
-    @CacheEvict(value = "persons", allEntries = true)
+    @CacheEvict(value = {"persons", "person", "personByEmail"}, allEntries = true)
     @Transactional
     public List<Person> saveAll(List<Person> persons) {
         logger.info("Saving {} persons", persons.size());
@@ -77,13 +92,14 @@ public class PersonService {
      * @param person The updated person data.
      * @return Optional containing the updated person, or empty if not found.
      */
-    @CacheEvict(value = {"persons", "person"}, allEntries = true)
+    @CacheEvict(value = {"persons", "person", "personByEmail"}, allEntries = true)
     @Transactional
     public Optional<Person> update(Long id, Person person) {
         logger.info("Updating person with ID: {}", id);
         return personRepository.findById(id)
                 .map(existing -> {
-                    person.setId(id); // Ensure ID is not changed
+                    person.setId(id);
+                    person.setCreatedAt(existing.getCreatedAt()); // Preserve creation time
                     return personRepository.save(person);
                 });
     }
@@ -93,15 +109,45 @@ public class PersonService {
      * @param id The ID of the person to delete.
      * @return true if the person was deleted, false if not found.
      */
-    @CacheEvict(value = {"persons", "person"}, allEntries = true)
+    @CacheEvict(value = {"persons", "person", "personByEmail"}, allEntries = true)
     @Transactional
     public boolean delete(Long id) {
-        logger.info("Deleting person with ID: {}", id);
+        logger.info("Soft deleting person with ID: {}", id);
+        return personRepository.findById(id)
+                .map(person -> {
+                    person.setDeleted(true);
+                    personRepository.save(person);
+                    return true;
+                })
+                .orElse(false);
+    }
+
+    /**
+     * Hard deletes a person by their ID.
+     * @param id The ID of the person to delete.
+     * @return true if the person was deleted, false if not found.
+     */
+    @CacheEvict(value = {"persons", "person", "personByEmail"}, allEntries = true)
+    @Transactional
+    public boolean hardDelete(Long id) {
+        logger.info("Hard deleting person with ID: {}", id);
         return personRepository.findById(id)
                 .map(person -> {
                     personRepository.delete(person);
                     return true;
                 })
                 .orElse(false);
+    }
+
+    /**
+     * Searches for persons based on a query and pagination.
+     * @param query The search query.
+     * @param pageable The pagination information.
+     * @return Page of persons matching the query.
+     */
+    @Transactional(readOnly = true)
+    public Page<Person> search(String query, Pageable pageable) {
+        logger.info("Searching persons with query: {}", query);
+        return personRepository.findByNameContainingOrEmailContaining(query, query, pageable);
     }
 }

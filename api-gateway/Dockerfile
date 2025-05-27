@@ -1,17 +1,36 @@
-FROM maven:3.9.9-eclipse-temurin-21 AS build
+# Build stage
+FROM maven:3.8.4-openjdk-17-slim AS build
 WORKDIR /app
-COPY pom.xml .
-COPY src ./src
-RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:21-jre
+# Copy pom.xml and download dependencies
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
+
+# Copy source code and build
+COPY src ./src
+RUN mvn package -DskipTests
+
+# Run stage
+FROM openjdk:17-slim
 WORKDIR /app
-COPY --from=build /app/target/api-gateway.jar .
-COPY filebeat.yml .
-RUN apt-get update && apt-get install -y curl && \
-    curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.15.2-linux-x86_64.tar.gz && \
-    tar xzvf filebeat-8.15.2-linux-x86_64.tar.gz && \
-    mv filebeat-8.15.2-linux-x86_64/filebeat /usr/local/bin/ && \
-    rm -rf filebeat-8.15.2-linux-x86_64.tar.gz
-RUN mkdir /logs && chmod -R 777 /logs
-CMD ["sh", "-c", "filebeat -e -c filebeat.yml & java -jar api-gateway.jar"]
+
+# Create a non-root user
+RUN useradd -r -u 1001 -g root appuser
+
+# Copy the built artifact from build stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Create directory for logs
+RUN mkdir -p /app/logs && chown -R appuser:root /app/logs
+
+# Switch to non-root user
+USER appuser
+
+# Set environment variables
+ENV JAVA_OPTS="-Xms512m -Xmx1024m -XX:+UseG1GC"
+
+# Expose the application port
+EXPOSE 8080
+
+# Run the application
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
