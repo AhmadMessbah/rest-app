@@ -1,0 +1,1 @@
+db.image_requests.createIndex({ description: "text" });

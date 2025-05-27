@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-ui
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: web-ui
+  template:
+    metadata:
+      labels:
+        app: web-ui
+    spec:
+      containers:
+      - name: web-ui
+        image: web-ui:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: api-url

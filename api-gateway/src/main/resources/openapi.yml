@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: API Gateway Documentation
+  description: Documentation for API Gateway routes and security requirements
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local API Gateway
+paths:
+  /api/persons/**:
+    get:
+      summary: Route to Persons Service
+      description: Forwards requests to the Persons Service for managing person data.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response from Persons Service
+        '401':
+          description: Unauthorized - Missing or invalid JWT token
+    post:
+      summary: Route to Persons Service
+      description: Forwards requests to create persons in the Persons Service.
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Person created successfully
+        '401':
+          description: Unauthorized - Missing or invalid JWT token
+  /api/image-requests/**:
+    get:
+      summary: Route to Image Requests Service
+      description: Forwards requests to the Image Requests Service for processing image requests.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Successful response from Image Requests Service
+        '401':
+          description: Unauthorized - Missing or invalid JWT token
+    post:
+      summary: Route to Image Requests Service
+      description: Forwards requests to create image requests in the Image Requests Service.
+      security:
+        - BearerAuth: []
+      responses:
+        '201':
+          description: Image request created successfully
+        '401':
+          description: Unauthorized - Missing or invalid JWT token
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

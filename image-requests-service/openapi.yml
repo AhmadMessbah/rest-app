@@ -1,0 +1,83 @@
+openapi: 3.0.3
+info:
+  title: Image Requests Service API
+  description: API for uploading images, extracting text with OCR, and searching text
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local Image Requests Service
+paths:
+  /api/image-requests/:
+    post:
+      summary: Upload an image
+      description: Uploads an image, extracts text using Tesseract, and stores it in MongoDB.
+      security:
+        - BearerAuth: []
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Image processed and stored
+        '400':
+          description: Invalid image file
+        '401':
+          description: Unauthorized - Missing or invalid JWT token
+    get:
+      summary: Get all image requests
+      description: Retrieves all image requests for the authenticated user.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of image requests
+        '401':
+          description: Unauthorized - Missing or invalid JWT token
+  /api/image-requests/{id}:
+    get:
+      summary: Get an image request by ID
+      description: Retrieves an image request by its ID.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Image request details
+        '404':
+          description: Image request not found
+        '401':
+          description: Unauthorized - Missing or invalid JWT token
+  /api/image-requests/search/:
+    get:
+      summary: Search image requests by text
+      description: Performs a full-text search on extracted text for the authenticated user.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of matching image requests
+        '401':
+          description: Unauthorized - Missing or invalid JWT token
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

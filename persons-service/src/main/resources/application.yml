@@ -1,0 +1,62 @@
+# Server configuration
+server:
+  port: 8081
+
+# Spring configuration
+spring:
+  # Database configuration (PostgreSQL)
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/persons_db
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        cache:
+          use_second_level_cache: true
+          use_query_cache: true
+          region.factory_class: org.hibernate.cache.redis.jedis.JedisRegionFactory
+        redis:
+          host: ${REDIS_HOST:localhost}
+          port: ${REDIS_PORT:6379}
+  # Redis configuration
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+
+# Actuator and Prometheus configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info,metrics
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# OpenAPI (Swagger) configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
+    operationsSorter: alpha
+
+# JWT configuration
+jwt:
+  secret: ${JWT_SECRET:your-secure-jwt-secret-key}
+
+# Logging configuration
+logging:
+  level:
+    com.example.persons: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+
+
+# DB_HOST=localhost;DB_USERNAME=postgres;DB_PASSWORD=password;REDIS_HOST=localhost;REDIS_PORT=6379;JWT_SECRET=your-secure-jwt-secret-key

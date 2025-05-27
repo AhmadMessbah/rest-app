@@ -1,0 +1,129 @@
+version: '3.8'
+services:
+  api-gateway:
+    image: api-gateway:latest
+    build:
+      context: ../../api-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=your-secure-jwt-secret-key
+    depends_on:
+      - redis
+      - persons-service
+      - image-requests-service
+    networks:
+      - app-network
+
+  persons-service:
+    image: persons-service:latest
+    build:
+      context: ../../persons-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/personsdb
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=securepassword
+      - JWT_SECRET=your-secure-jwt-secret-key
+    depends_on:
+      - postgresql
+    networks:
+      - app-network
+
+  image-requests-service:
+    image: image-requests-service:latest
+    build:
+      context: ../../image-requests-service
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/image_requests_db
+      - JWT_SECRET=your-secure-jwt-secret-key
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+
+  web-ui:
+    image: web-ui:latest
+    build:
+      context: ../../web-ui
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://api-gateway:8080/api
+    depends_on:
+      - api-gateway
+    networks:
+      - app-network
+
+  postgresql:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=personsdb
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=securepassword
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./postgresql/postgresql.conf:/etc/postgresql/postgresql.conf
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    networks:
+      - app-network
+
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+      - ./mongodb/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+    depends_on:
+      - prometheus
+    networks:
+      - app-network
+
+volumes:
+  postgresql-data:
+  mongodb-data:
+
+networks:
+  app-network:
+    driver: bridge

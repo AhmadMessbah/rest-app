@@ -1,0 +1,69 @@
+name: CD to Production
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and Push Docker Images
+        run: |
+          for module in api-gateway persons-service image-requests-service web-ui; do
+            docker build -t ghcr.io/${{ github.repository }}/$module:latest ./$module
+            docker push ghcr.io/${{ github.repository }}/$module:latest
+          done
+
+      - name: Scan Docker Images
+        uses: ./.github/actions/security-scan
+        with:
+          scan-path: .
+
+      - name: Manual Approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ github.TOKEN }}
+          approvers: ${{ github.repository_owner }}
+          minimum-approvals: 1
+
+      - name: Deploy to Production
+        run: |
+          chmod +x ci-cd/scripts/deploy-kubernetes.sh
+          ci-cd/scripts/deploy-kubernetes.sh latest
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Trigger ArgoCD Sync
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.ARGOCD_TOKEN }}" \
+            -d '{"prune": true}' \
+            https://argocd.example.com/api/v1/applications/rest-app/sync
+        env:
+          ARGOCD_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+
+      - name: Verify Deployment
+        run: |
+          kubectl rollout status deployment/api-gateway
+          kubectl rollout status deployment/persons-service
+          kubectl rollout status deployment/image-requests-service
+          kubectl rollout status deployment/web-ui

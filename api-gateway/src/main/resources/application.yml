@@ -1,0 +1,63 @@
+# Server configuration
+server:
+  port: 8080
+
+# Spring Cloud Gateway configuration
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: persons-service
+          uri: http://persons-service:8081
+          predicates:
+            - Path=/api/persons/**
+          filters:
+            - RemoveRequestHeader=Authorization # حذف هدر حساس
+            - AddRequestHeader=X-Request-Origin, api-gateway
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 10
+                redis-rate-limiter.burstCapacity: 20
+        - id: image-requests-service
+          uri: http://image-requests-service:8000
+          predicates:
+            - Path=/api/image-requests/**
+          filters:
+            - AddRequestHeader=X-Request-Origin, api-gateway
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 5
+                redis-rate-limiter.burstCapacity: 10
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+
+# Actuator and Prometheus configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info,metrics,gateway
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# OpenAPI (Swagger) configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui
+    operationsSorter: alpha
+
+# JWT configuration
+jwt:
+  secret: ${JWT_SECRET:your-secure-jwt-secret-key}
+
+# Logging configuration
+logging:
+  level:
+    com.example.gateway: INFO
+    org.springframework.cloud.gateway: WARN
+    org.springframework.web: WARN

@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8080']
+    metrics_path: /actuator/prometheus
+  - job_name: 'persons-service'
+    static_configs:
+      - targets: ['persons-service:8081']
+    metrics_path: /actuator/prometheus
+  - job_name: 'image-requests-service'
+    static_configs:
+      - targets: ['image-requests-service:8000']
+    metrics_path: /metrics
+  - job_name: 'postgresql'
+    static_configs:
+      - targets: ['postgresql:5432']
+    metrics_path: /metrics

@@ -1,0 +1,27 @@
+name: Image Requests Service CI/CD
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'image-requests-service/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r image-requests-service/requirements.txt
+      - name: Run tests
+        run: pytest image-requests-service/tests
+      - name: Build Docker image
+        run: docker build -t image-requests-service:latest image-requests-service/
+      - name: Deploy to Minikube
+        run: |
+          minikube start
+          kubectl apply -f image-requests-service/kubernetes/deployment.yaml
